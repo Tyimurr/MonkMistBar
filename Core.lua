@@ -2,10 +2,27 @@ local addonName, MMB = ...
 local spellID = 115151
 local LSM = LibStub("LibSharedMedia-3.0")
 
-MMB.maxCharges = 2 -- Standardwert
+MMB.maxCharges = 2
 MMB.currentCharges = 0
 MMB.cooldownStart = 0
 MMB.cooldownDuration = 0
+MMB.isActive = false
+
+local function CheckSpec(frame)
+    local _, playerClass = UnitClass("player")
+    if playerClass == "MONK" then
+        local spec = GetSpecialization()
+        MMB.isActive = (spec == 2)
+    else
+        MMB.isActive = false
+    end
+
+    if MMB.isActive then
+        frame:Show()
+    else
+        frame:Hide()
+    end
+end
 
 function MMB.InitDB()
     _G.MonkMistBarDB = _G.MonkMistBarDB or {}
@@ -120,7 +137,6 @@ local function UpdateChargeData()
         MMB.cooldownStart = chargeInfo.cooldownStartTime or 0
         MMB.cooldownDuration = chargeInfo.cooldownDuration or 0
         
-        -- Falls sich die Anzahl der Balken geändert hat (Talent), UI sofort neu aufbauen
         if oldMax ~= MMB.maxCharges then
             MMB.ApplySettings()
         end
@@ -132,7 +148,7 @@ f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("SPELL_UPDATE_CHARGES")
 f:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-f:RegisterEvent("TRAIT_CONFIG_UPDATED") -- Wichtig für Talentwechsel!
+f:RegisterEvent("TRAIT_CONFIG_UPDATED")
 
 f:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
@@ -143,17 +159,29 @@ f:SetScript("OnEvent", function(self, event, arg1)
             self.bars[i]:SetMinMaxValues(0, 1) 
         end
     elseif event == "PLAYER_ENTERING_WORLD" then
-        -- Kleiner Delay, damit die Anker-Frames (Actionbars) Zeit haben, ihre Breite zu finden
+        CheckSpec(self)
         C_Timer.After(1, function()
+            if MMB.isActive then
+                UpdateChargeData()
+                MMB.ApplySettings()
+            end
+        end)
+    elseif event == "TRAIT_CONFIG_UPDATED" then
+        CheckSpec(self)
+        if MMB.isActive then
             UpdateChargeData()
             MMB.ApplySettings()
-        end)
+        end
     else
-        UpdateChargeData()
+        if MMB.isActive then
+            UpdateChargeData()
+        end
     end
 end)
 
 f:SetScript("OnUpdate", function(self)
+    if not MMB.isActive then return end
+
     for i = 1, MMB.maxCharges do
         local bar = self.bars[i]
         if not bar then break end
