@@ -1,7 +1,7 @@
 ## Interface: 120001, 120005, 120000
 ## Title: |cff00FF96MonkMistBar|r
 ## Notes: Minimalist Renewing Mist charge tracker for Mistweaver Monks.
-## Version: 1.1.1
+## Version: 1.1.5
 ## Author: Tyimur
 ## SavedVariables: MonkMistBarDB
 ## IconTexture: Interface\AddOns\MonkMistBar\media\MonkMistBarLogo
