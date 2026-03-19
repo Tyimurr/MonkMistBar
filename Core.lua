@@ -63,7 +63,7 @@ local function GetAnchorFrame(key)
 end
 
 function MMB.ApplySettings()
-    if not _G.MonkMistBarDB or not MonkMistBarFrame then return end
+    if not _G.MonkMistBarDB or not MonkMistBarFrame or not MMB.isActive then return end
     local db, f = _G.MonkMistBarDB, MonkMistBarFrame
     local target = GetAnchorFrame(db.anchorTo)
     

@@ -303,7 +303,7 @@ local function CreateOptionsPanel()
     
     footerText:SetText(
         "Author: |cff00ff98Tyimur|r\n" ..
-        "|cff888888Version: 1.0.0|r\n\n" ..
+        "|cff888888Version: 1.1.1|r\n\n" ..
         "A huge thanks to |cff00ff98Spazhealer|r for the idea of this display. It has become a permanent part of my UI.\n\n" ..
         "Special thanks to |cff00ff98baremetalxd|r: I discovered your Twitch streams when I first started playing Mistweaver. You were a true idol and the reason I fell in love with this class. Thank you for the inspiration!"
     )
