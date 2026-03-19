@@ -1,0 +1,60 @@
+<Ui>
+    <Frame name="MMB_BoxTemplate" inherits="BackdropTemplate" virtual="true">
+        <Scripts>
+            <OnLoad>
+                self:SetBackdrop({
+                    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+                    edgeFile = "Interface\\Buttons\\WHITE8X8",
+                    tile = true, tileSize = 16, edgeSize = 1,
+                    insets = { left = 0, right = 0, top = 0, bottom = 0 }
+                })
+                self:SetBackdropColor(0, 0, 0, 0.6)
+                self:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+            </OnLoad>
+        </Scripts>
+    </Frame>
+
+    <Frame name="MMB_SliderTemplate" virtual="true">
+        <Size x="580" y="45"/>
+        <Frames>
+            <Frame parentKey="box" inherits="MMB_BoxTemplate">
+                <Size x="45" y="18"/>
+                <Anchors><Anchor point="RIGHT" x="0" y="-8"/></Anchors>
+                <Layers>
+                    <Layer level="OVERLAY">
+                        <FontString parentKey="val" inherits="GameFontHighlightSmall" justifyH="CENTER">
+                            <Anchors><Anchor point="CENTER"/></Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+            </Frame>
+            <Slider parentKey="slider" inherits="MinimalSliderTemplate">
+                <Size y="16"/>
+                <Anchors>
+                    <Anchor point="LEFT" x="0" y="-8"/>
+                    <Anchor point="RIGHT" relativeKey="$parent.box" relativePoint="LEFT" x="-10"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <FontString parentKey="label" inherits="GameFontNormal" justifyH="CENTER">
+                            <Anchors><Anchor point="BOTTOM" relativePoint="TOP" x="0" y="4"/></Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+            </Slider>
+        </Frames>
+    </Frame>
+
+    <CheckButton name="MMB_CheckButtonTemplate" virtual="true">
+        <Size x="24" y="24"/>
+        <NormalTexture atlas="checkbox-minimal" useAtlasSize="true"/>
+        <CheckedTexture atlas="checkmark-minimal" useAtlasSize="true"/>
+        <Layers>
+            <Layer level="ARTWORK">
+                <FontString inherits="GameFontHighlight" parentKey="Text">
+                    <Anchors><Anchor point="LEFT" relativePoint="RIGHT" x="6"/></Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+    </CheckButton>
+</Ui>

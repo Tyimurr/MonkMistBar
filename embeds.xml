@@ -1,0 +1,6 @@
+<UI>
+	<Script file="libs\LibStub\LibStub.lua"/>
+	<Include file="libs\CallbackHandler-1.0\CallbackHandler-1.0.xml"/>
+    <Include file="libs\LibSFDropDown\LibSFDropDown.xml"/>
+	<Include file="libs\LibSharedMedia-3.0\lib.xml"/>
+</UI>
