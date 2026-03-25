@@ -131,25 +131,19 @@ local function CreateOptionsPanel()
     local panel = CreateFrame("Frame", "MonkMistBarOptions", UIParent)
     local scrollFrame = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 8, -8); scrollFrame:SetPoint("BOTTOMRIGHT", -28, 8)
-    local scrollChild = CreateFrame("Frame"); scrollChild:SetSize(580, 1100); scrollFrame:SetScrollChild(scrollChild)
+    local scrollChild = CreateFrame("Frame"); scrollChild:SetSize(580, 1150); scrollFrame:SetScrollChild(scrollChild)
     local title = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, -10); title:SetText("MonkMistBar")
 
-    local anchorDD, autoCB, texDD, bgTexDD, borDD, showBorCB, wS
+    local anchorDD, autoCB, texDD, bgTexDD, borDD, showBorCB, wS, debugCB, welcomeCB
 
     local function UpdateAutoWidthState()
         local db = _G.MonkMistBarDB
         local isManual = (db.anchorTo == "Manual")
-        
         if isManual then
-            autoCB:SetChecked(false)
-            autoCB:Disable()
-            autoCB:SetAlpha(0.5)
-            autoCB.Text:SetTextColor(0.5, 0.5, 0.5)
+            autoCB:SetChecked(false); autoCB:Disable(); autoCB:SetAlpha(0.5); autoCB.Text:SetTextColor(0.5, 0.5, 0.5)
         else
-            autoCB:Enable()
-            autoCB:SetAlpha(1.0)
-            autoCB.Text:SetTextColor(1, 0.82, 0)
+            autoCB:Enable(); autoCB:SetAlpha(1.0); autoCB.Text:SetTextColor(1, 0.82, 0)
             local state = db.autoWidthSettings[db.anchorTo]
             if state == nil then state = true end 
             autoCB:SetChecked(state)
@@ -169,14 +163,27 @@ local function CreateOptionsPanel()
         SetDDText(texDD, "Bar: "..db.texture)
         SetDDText(bgTexDD, "Background: "..db.bgTexture)
         SetDDText(borDD, "Border: "..db.borderTexture)
-        
+        debugCB:SetChecked(db.debugMode)
+        welcomeCB:SetChecked(db.showWelcomeMsg)
         UpdateAutoWidthState()
         showBorCB:SetChecked(db.showBorder)
         RefreshOptionsUI()
     end)
 
+    -- SECTION: GENERAL
+    local secGen = CreateSection(scrollChild, "General Settings", title, -15)
+    debugCB = CreateFrame("CheckButton", nil, scrollChild, "MMB_CheckButtonTemplate")
+    debugCB:SetPoint("TOPLEFT", secGen, "BOTTOMLEFT", 0, -10)
+    debugCB.Text:SetText("Enable Debug Mode (Chat Logging)")
+    debugCB:SetScript("OnClick", function(self) _G.MonkMistBarDB.debugMode = self:GetChecked() end)
+
+    welcomeCB = CreateFrame("CheckButton", nil, scrollChild, "MMB_CheckButtonTemplate")
+    welcomeCB:SetPoint("TOPLEFT", debugCB, "BOTTOMLEFT", 0, -5)
+    welcomeCB.Text:SetText("Show Welcome Message on Login")
+    welcomeCB:SetScript("OnClick", function(self) _G.MonkMistBarDB.showWelcomeMsg = self:GetChecked() end)
+
     -- SECTION: POSITION
-    local secPos = CreateSection(scrollChild, "Position & Anchoring", title, -15)
+    local secPos = CreateSection(scrollChild, "Position & Anchoring", welcomeCB, -25)
     anchorDD = lsfdd:CreateModernButton(scrollChild, 240, 26)
     anchorDD:SetPoint("TOPLEFT", secPos, "BOTTOMLEFT", 0, -15)
     autoCB = CreateFrame("CheckButton", nil, scrollChild, "MMB_CheckButtonTemplate")
@@ -238,75 +245,45 @@ local function CreateOptionsPanel()
             self:ddAddButton({ text = name, func = function() _G.MonkMistBarDB.borderTexture = name; SetDDText(borDD, "Border: "..name); MMB.ApplySettings() end, checked = function() return _G.MonkMistBarDB.borderTexture == name end })
         end
     end)
-    
     local borSizeS = AddSlider(scrollChild, "Border Thickness", 0, 10, "borderSize", borDD, 300, 18, 240)
     local borColBtn = CreateColorButton(scrollChild, "Border Color:", "borderColor", borDD, 0, -38)
 
-    -- SECTION: ABOUT & SUPPORT
+    -- SECTION: ABOUT
     local function AddCopyBox(label, value, iconPath, anchor, yOffset)
         local container = CreateFrame("Frame", nil, scrollChild)
-        container:SetSize(560, 30)
-        container:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, yOffset)
-
+        container:SetSize(560, 30); container:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, yOffset)
         if iconPath then
             local icon = container:CreateTexture(nil, "ARTWORK")
-            icon:SetSize(22, 22)
-            icon:SetPoint("LEFT", container, "LEFT", 10, 0)
-            icon:SetTexture(iconPath)
+            icon:SetSize(22, 22); icon:SetPoint("LEFT", container, "LEFT", 10, 0); icon:SetTexture(iconPath)
         end
-
         local lbl = container:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        lbl:SetPoint("LEFT", container, "LEFT", 40, 0)
-        lbl:SetText(label)
-
+        lbl:SetPoint("LEFT", container, "LEFT", 40, 0); lbl:SetText(label)
         local box = CreateFrame("Frame", nil, container, "MMB_BoxTemplate")
-        box:SetSize(350, 22)
-        box:SetPoint("LEFT", container, "LEFT", 150, 0)
-
+        box:SetSize(350, 22); box:SetPoint("LEFT", container, "LEFT", 150, 0)
         local eb = CreateFrame("EditBox", nil, box)
-        eb:SetSize(340, 20)
-        eb:SetPoint("CENTER", box, "CENTER", 0, 0)
-        eb:SetFontObject("GameFontHighlightSmall")
-        eb:SetAutoFocus(false)
-        eb:SetText(value)
-        eb:SetCursorPosition(0)
-        
+        eb:SetSize(340, 20); eb:SetPoint("CENTER", box, "CENTER", 0, 0); eb:SetFontObject("GameFontHighlightSmall"); eb:SetAutoFocus(false); eb:SetText(value); eb:SetCursorPosition(0)
         eb:SetScript("OnTextChanged", function(self, userInput) if userInput then self:SetText(value) end end)
         eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
         container:SetScript("OnShow", function() eb:SetText(value) end)
-        
         return container
     end
 
     local secAbout = CreateSection(scrollChild, "About & Support", borDD, -80)
     local mediaPath = "Interface\\AddOns\\MonkMistBar\\Media\\"
-    
     local dBox = AddCopyBox("Discord:", "Tyimur", mediaPath.."discord.tga", secAbout, -15)
     local gBox = AddCopyBox("Github:", "https://github.com/Tyimurr/MonkMistBar", mediaPath.."github.tga", dBox, -10)
     local wBox = AddCopyBox("Wago:", "https://addons.wago.io/addons/monkmistbar", mediaPath.."wago.tga", gBox, -10)
     local cBox = AddCopyBox("CurseForge:", "https://www.curseforge.com/wow/addons/monkmistbar", mediaPath.."curse.tga", wBox, -10)
 
-    -- FOOTER INFO
     local footerContainer = CreateFrame("Frame", nil, scrollChild)
-    footerContainer:SetSize(550, 100)
-    footerContainer:SetPoint("TOPLEFT", cBox, "BOTTOMLEFT", 10, -40)
-
+    footerContainer:SetSize(550, 100); footerContainer:SetPoint("TOPLEFT", cBox, "BOTTOMLEFT", 10, -40)
     local footerTitle = footerContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    footerTitle:SetPoint("TOPLEFT", 0, 0)
-    footerTitle:SetText("|cff00ff98MonkMistBar|r")
-
+    footerTitle:SetPoint("TOPLEFT", 0, 0); footerTitle:SetText("|cff00ff98MonkMistBar|r")
     local footerText = footerContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    footerText:SetPoint("TOPLEFT", footerTitle, "BOTTOMLEFT", 0, -10)
-    footerText:SetWidth(500)
-    footerText:SetJustifyH("LEFT")
-    footerText:SetSpacing(3)
-    
-    footerText:SetText(
-        "Author: |cff00ff98Tyimur|r\n" ..
-        "|cff888888Version: 1.1.5|r\n\n" ..
+    footerText:SetPoint("TOPLEFT", footerTitle, "BOTTOMLEFT", 0, -10); footerText:SetWidth(500); footerText:SetJustifyH("LEFT"); footerText:SetSpacing(3)
+    footerText:SetText("Author: |cff00ff98Tyimur|r\n|cff888888Version: 1.2.0|r\n\n" ..
         "A huge thanks to |cff00ff98Spazhealer|r for the idea of this display. It has become a permanent part of my UI.\n\n" ..
-        "Special thanks to |cff00ff98baremetalxd|r: I discovered your Twitch streams when I first started playing Mistweaver. You were a true idol and the reason I fell in love with this class. Thank you for the inspiration!"
-    )
+        "Special thanks to |cff00ff98baremetalxd|r: I discovered your Twitch streams when I first started playing Mistweaver. You were a true idol and the reason I fell in love with this class. Thank you for the inspiration!")
 
     panel:SetScript("OnShow", function()
         local db = _G.MonkMistBarDB
@@ -315,12 +292,10 @@ local function CreateOptionsPanel()
         SetDDText(texDD, "Bar: ".. (db.texture or "None"))
         SetDDText(bgTexDD, "Background: ".. (db.bgTexture or "None"))
         SetDDText(borDD, "Border: ".. (db.borderTexture or "None"))
-        
-        UpdateAutoWidthState() 
-        showBorCB:SetChecked(db.showBorder)
-        RefreshOptionsUI()
+        debugCB:SetChecked(db.debugMode)
+        welcomeCB:SetChecked(db.showWelcomeMsg)
+        UpdateAutoWidthState(); showBorCB:SetChecked(db.showBorder); RefreshOptionsUI()
     end)
-
     return panel
 end
 

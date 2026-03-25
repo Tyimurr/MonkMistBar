@@ -4,32 +4,63 @@ local LSM = LibStub("LibSharedMedia-3.0")
 
 local curMax = 2
 local currentCharges = 2
+local lastKnownCharges = 2
 local lastStart, lastDuration = 0, 0
+local cachedDuration = 0
 local isMWActive = false
 local MainFrame
+
+-- Debug function: Checks database setting
+local function DBG(msg)
+    if _G.MonkMistBarDB and _G.MonkMistBarDB.debugMode then
+        print("|cff00ff99[MMB Debug]|r " .. tostring(msg))
+    end
+end
 
 local function IsSafeNumber(value)
     return value ~= nil and type(value) == "number" and not issecretvalue(value)
 end
 
+--------------------------------------------------------------------------------
+-- DATA LOGIC (API-SYNC)
+--------------------------------------------------------------------------------
 local function UpdateChargeData()
     local info = C_Spell.GetSpellCharges(spellID)
-    if info then
-        
-        if IsSafeNumber(info.currentCharges) then
-            currentCharges = info.currentCharges
+    if not info then return end
+
+    if IsSafeNumber(info.maxCharges) then
+        curMax = info.maxCharges
+        MMB.maxCharges = curMax
+    end
+
+    if IsSafeNumber(info.cooldownDuration) and info.cooldownDuration > 0 then
+        lastDuration = info.cooldownDuration
+        if info.cooldownDuration ~= cachedDuration then
+            DBG("Duration updated: " .. info.cooldownDuration)
+            cachedDuration = info.cooldownDuration
         end
+    end
+
+    if IsSafeNumber(info.currentCharges) then
+        local apiCharges = info.currentCharges
         
-        if IsSafeNumber(info.maxCharges) then
-            curMax = info.maxCharges
+        -- SYNC LOGIC: We only trust the API if it sees MORE charges than we do,
+        -- or if we are out of combat (where the API is more reliable).
+        if apiCharges > currentCharges or not InCombatLockdown() then
+            if apiCharges ~= currentCharges then
+                DBG(string.format("API-SYNC: local=%d -> API=%d", currentCharges, apiCharges))
+                currentCharges = apiCharges
+                
+                -- Sync timer if API provides more charges
+                if apiCharges < curMax and IsSafeNumber(info.cooldownStartTime) then
+                    lastStart = info.cooldownStartTime
+                elseif apiCharges >= curMax then
+                    lastStart = 0
+                end
+            end
         end
 
-        if IsSafeNumber(info.cooldownDuration) and info.cooldownDuration > 0 then
-            lastDuration = info.cooldownDuration
-            lastStart = info.cooldownStartTime or 0
-        end
-        
-        MMB.maxCharges = curMax
+        lastKnownCharges = apiCharges
         MMB.currentCharges = currentCharges
     end
 end
@@ -48,17 +79,22 @@ local function CheckSpec(frame)
     end
 end
 
+--------------------------------------------------------------------------------
+-- UI & DB INITIALIZATION
+--------------------------------------------------------------------------------
 function MMB.InitDB()
     _G.MonkMistBarDB = _G.MonkMistBarDB or {}
     local defaults = {
         offsetX = 0, offsetY = 0, width = 325, height = 10,
         texture = "Blizzard Target", barColor = {r = 0, g = 1.0, b = 0.596}, alpha = 1,
-        anchorTo = "Manual", customAnchorName = nil, bgTexture = "Blizzard Target", 
+        anchorTo = "Manual", customAnchorName = nil, bgTexture = "Blizzard Target",
         bgColor = {r = 0, g = 0, b = 0}, bgAlpha = 0.5, showBorder = true,
         borderTexture = "Solid", borderSize = 1, borderColor = {r = 0, g = 0, b = 0, a = 1},
-        spacing = 1, autoWidthSettings = { ["Manual"] = false }, userInteracted = { ["Manual"] = true }
+        spacing = 1, autoWidthSettings = { ["Manual"] = false }, userInteracted = { ["Manual"] = true },
+        debugMode = false,
+        showWelcomeMsg = true,
     }
-    for k, v in pairs(defaults) do 
+    for k, v in pairs(defaults) do
         if _G.MonkMistBarDB[k] == nil then _G.MonkMistBarDB[k] = v end
     end
 end
@@ -86,7 +122,7 @@ function MMB.ApplySettings()
     end
     f:SetHeight(db.height or 20)
     f:SetAlpha(db.alpha or 1)
-    
+
     local tex = LSM:Fetch("statusbar", db.texture or "Blizzard Target")
     local bgTex = LSM:Fetch("statusbar", db.bgTexture or "Blizzard Target")
     local borderTex = LSM:Fetch("border", db.borderTexture or "None")
@@ -122,6 +158,9 @@ function MMB.ApplySettings()
     end
 end
 
+--------------------------------------------------------------------------------
+-- EVENT HANDLING
+--------------------------------------------------------------------------------
 MainFrame = CreateFrame("Frame", "MonkMistBarFrame", UIParent, "BackdropTemplate")
 MainFrame:RegisterEvent("ADDON_LOADED")
 MainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -134,27 +173,90 @@ MainFrame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
     if event == "ADDON_LOADED" and arg1 == addonName then
         MMB.InitDB()
         self.bars = {}
-        for i = 1, 3 do self.bars[i] = CreateFrame("StatusBar", nil, self, "BackdropTemplate"); self.bars[i]:SetMinMaxValues(0, 1) end
+        for i = 1, 3 do
+            self.bars[i] = CreateFrame("StatusBar", nil, self, "BackdropTemplate")
+            self.bars[i]:SetMinMaxValues(0, 1)
+        end
+
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" and arg3 == spellID then
-        if currentCharges > 0 then currentCharges = currentCharges - 1 end
+        local prevCharges = currentCharges
+        if currentCharges > 0 then
+            currentCharges = currentCharges - 1
+        else
+            DBG("Cast at 0 charges (SECRET) – waiting for resync")
+        end
+        lastKnownCharges = currentCharges
+
+        -- Timer logic: Only start new timer if none is running
+        if lastStart == 0 or lastStart == nil then
+            if lastDuration < 0.1 and cachedDuration > 0 then
+                lastDuration = cachedDuration
+            end
+            lastStart = GetTime()
+            DBG(string.format("Cast (Timer Start): %d->%d | lastStart=%.2f", prevCharges, currentCharges, lastStart))
+        else
+            DBG(string.format("Cast (Timer continues): %d->%d | remains at %.2f", prevCharges, currentCharges, lastStart))
+        end
+
     elseif event == "PLAYER_ENTERING_WORLD" or event == "TRAIT_CONFIG_UPDATED" then
         CheckSpec(self)
-        C_Timer.After(0.5, function() if isMWActive then UpdateChargeData(); MMB.ApplySettings() end end)
+        C_Timer.After(0.5, function()
+            if isMWActive then
+                UpdateChargeData()
+                MMB.ApplySettings()
+            end
+        end)
     else
         if isMWActive then UpdateChargeData() end
     end
 end)
 
+-- Welcome message
+local welcomeFrame = CreateFrame("Frame")
+welcomeFrame:RegisterEvent("PLAYER_LOGIN")
+welcomeFrame:SetScript("OnEvent", function()
+    C_Timer.After(2, function()
+        if _G.MonkMistBarDB and _G.MonkMistBarDB.showWelcomeMsg then
+            print("|cff00ff98MonkMistBar|r loaded. Type |cff00ff98/mmb|r for options. (Version: 1.2.0)")
+        end
+    end)
+end)
+
+--------------------------------------------------------------------------------
+-- ONUPDATE (VISUAL + TIMER AUTONOMY)
+--------------------------------------------------------------------------------
 MainFrame:SetScript("OnUpdate", function(self)
     if not isMWActive then return end
     local now = GetTime()
-    
+
+    -- TIMER AUTONOMY: We increment charges internally when time is up
+    if lastStart > 0 and lastDuration > 0 then
+        local elapsed = now - lastStart
+        if elapsed >= lastDuration then
+            if currentCharges < curMax then
+                currentCharges = currentCharges + 1
+                DBG("Timer expired: Charge increased internally to " .. currentCharges)
+                
+                if currentCharges < curMax then
+                    -- Carry over overflow time to next charge
+                    lastStart = lastStart + lastDuration
+                else
+                    lastStart = 0
+                    lastDuration = 0
+                end
+            else
+                lastStart = 0
+            end
+        end
+    end
+
+    -- Draw bars
     for i = 1, 3 do
         local bar = self.bars[i]
         if bar and i <= curMax then
             if i <= currentCharges then
                 bar:SetValue(1)
-            elseif i == (currentCharges + 1) and lastDuration > 0.1 then
+            elseif i == (currentCharges + 1) and lastDuration > 0.1 and lastStart > 0 then
                 local progress = (now - lastStart) / lastDuration
                 bar:SetValue(progress > 1 and 1 or (progress < 0 and 0 or progress))
             else

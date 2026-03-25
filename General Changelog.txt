@@ -1,0 +1,30 @@
+V1.2.0
+-Fixed API data lag by implementing internal "Timer Autonomy" for reliable charge tracking in combat.
+-Improved charge synchronization to prevent UI flickering or incorrect "0 charge" states.
+-Improved cooldown animations to ensure smooth transitions during rapid spell casts.
+-Added dynamic haste support to instantly update bar speeds when stats change.
+-Added New "General Settings" section to the options menu.
+-Added Toggleable Debug Mode for easier troubleshooting via chat logs.
+-Added Login Message to confirm the addon is loaded (can be disabled in options).
+
+V1.1.5
+-improve compatibility with latest api changes to prevent lua warnings when entering combat
+-improve data handling to ensure status bar updates remain functional during combat lockdown
+-fixing an issue where resource bars could fail to refresh while in combat
+-fixing internal script errors related to protected value access during active encounters
+-fixing charge synchronization to maintain accurate visual progress in all game states
+
+V1.1.1
+-Updated internal versioning and metadata for consistency.
+-Performed minor adjustments to ensure full compatibility with the specialization check logic.
+
+V1.1.0
+-MMB now automatically detects your character's class and specialization. The bar will only be displayed when playing a Mistweaver Monk
+-Added a guard to the OnUpdate loop. Background calculations are now fully suspended if the player is not in the Mistweaver specialization, ensuring zero CPU impact when playing other specs or classes.
+
+V1.0.0 - Official Release
+-Dynamic Charge Tracking: Automatically adapts to 2 or 3 charges based on your talents.
+-Smart Anchoring System: Includes a Custom Frame Picker to anchor the bar to any UI element (Action Bars, Unit Frames, etc.).
+-Auto-Width Scaling: The bar can now automatically match the width of its anchor.
+-Full Visual Control: Customize textures, colors, borders, and transparency via the new options panel.
+-High Performance: Rewritten logic using modern WoW events to ensure minimal CPU usage.
