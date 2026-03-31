@@ -10,7 +10,7 @@ Status: No known bugs and fully optimized for all classes.
 
 Note: While the initial setup requires a bit more effort to configure, it performs significantly better and offers much more stability.
 
-Thank you for all your support over the years!
+Thank you for all your support!
 
 Download ArcUI: https://www.curseforge.com/wow/addons/arc-ui
 
