@@ -2,6 +2,18 @@
 
 **MonkMistBar** is a lightweight, high-performance World of Warcraft addon specifically designed for Mistweaver Monks. It provides a highly customizable visual status bar to track **Renewing Mist** charges with pixel-perfect precision and advanced combat reliability.
 
+## IMPORTANT
+
+Development for this addon has ended. All its features have been fully integrated into ArcUI.
+
+Status: No known bugs and fully optimized for all classes.
+
+Note: While the initial setup requires a bit more effort to configure, it performs significantly better and offers much more stability.
+
+Thank you for all your support over the years!
+
+Download ArcUI: https://www.curseforge.com/wow/addons/arc-ui
+
 ## Features
 
 - **Advanced Combat Reliability (New in v1.2.0):** Features "Timer Autonomy" logic and a smart API-Sync filter. The bar tracks charges internally during high-combat activity to prevent flickering or incorrect "0 charge" states caused by server lag.
